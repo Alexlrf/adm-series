@@ -9,16 +9,15 @@ use App\Models\Serie;
 
 class SeriesController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Jeito escrevendo Query na mão, sem usar o Eloquent
-        // $series = DB::select('select nome from series;');
-        // dd($series);
-        // return view('series.index')->with('series', $series);
-
-        // $series = Serie::all();
+        $mensagemSucesso = $request->session()->get('mensagem.sucesso');
+        $request->session()->forget('mensagem.sucesso');
         $series = Serie::query()->orderBy('nome')->get();
-        return view('series.index')->with('series', $series);
+
+        return view('series.index')
+                ->with('series', $series)
+                ->with('mensagemSucesso', $mensagemSucesso);
 
     }
 
@@ -29,15 +28,38 @@ class SeriesController extends Controller
 
     public function store(Request $request)
     {
-        // Jeito escrevendo Query na mão, sem usar o Eloquent
-        // $nome = $request->input('nome');
-        // DB::insert('insert into series (nome) values (?)', [$nome]);
-        // return redirect('/series');
+        $request->validate([
+            'nome'=> ['required', 'min:3']
+        ]);
+        $serie = Serie::create($request->all());
 
-        $nomeSerie = $request->input('nome');
-        $serie = new Serie();
-        $serie->nome = $nomeSerie;
-        $serie->save();
-        return redirect('/series');
+        return redirect()
+            ->route('series.index')
+            ->with('mensagem.sucesso', "Série [ $serie->nome ] adicionada com sucesso!");;
+    }
+
+    public function destroy(Serie $series)
+    {
+        $series->delete();
+
+        return redirect()
+            ->route('series.index')
+            ->with('mensagem.sucesso', "Série [ $series->nome ] removida com sucesso!");
+    }
+
+    public function edit(Serie $series)
+    {
+        return view('series.edit')->with('serie', $series);
+    }
+
+    public function update(Serie $series, Request $request)
+    {
+        $series->fill($request->all());
+        $series->save();
+        
+        return redirect()
+            ->route('series.index')
+            ->with('mensagem.sucesso', "Série [ $series->nome ] atualizada com sucesso!");
+
     }
 }
